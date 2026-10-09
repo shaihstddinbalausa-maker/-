@@ -1,0 +1,378 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+    <title>Неоновая Пицца-Кликер</title>
+    <style>
+        * {
+            box-sizing: border-box;
+            user-select: none;
+            -webkit-user-select: none;
+            touch-action: manipulation;
+            margin: 0;
+            padding: 0;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        }
+
+        body {
+            background: #0d0221;
+            color: #fff;
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: space-between;
+            padding: 15px;
+            overflow-x: hidden;
+        }
+
+        /* Шапка со статистикой */
+        .header {
+            width: 100%;
+            max-width: 400px;
+            display: flex;
+            justify-content: space-between;
+            background: rgba(255, 255, 255, 0.05);
+            border: 1px solid #00f0ff;
+            box-shadow: 0 0 15px rgba(0, 240, 255, 0.3);
+            padding: 12px 20px;
+            border-radius: 15px;
+            margin-bottom: 10px;
+        }
+
+        .stat-box {
+            text-align: center;
+        }
+
+        .stat-label {
+            font-size: 12px;
+            color: #a0a0a0;
+            text-transform: uppercase;
+        }
+
+        .stat-value {
+            font-size: 20px;
+            font-weight: bold;
+            color: #00f0ff;
+            text-shadow: 0 0 8px #00f0ff;
+        }
+
+        /* Главная пицца */
+        .game-area {
+            position: relative;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            margin: 10px 0;
+        }
+
+        .pizza-btn {
+            font-size: 110px;
+            background: none;
+            border: none;
+            cursor: pointer;
+            outline: none;
+            transition: transform 0.05s ease;
+            filter: drop-shadow(0 0 20px #ff007f);
+            border-radius: 50%;
+            padding: 10px;
+        }
+
+        .pizza-btn:active {
+            transform: scale(0.88);
+        }
+
+        /* Вылетающие цифры */
+        .floating-text {
+            position: absolute;
+            font-size: 26px;
+            font-weight: bold;
+            color: #ff007f;
+            text-shadow: 0 0 10px #ff007f, 0 0 20px #ff007f;
+            pointer-events: none;
+            animation: floatUp 0.8s ease-out forwards;
+        }
+
+        @keyframes floatUp {
+            0% { opacity: 1; transform: translateY(0) scale(1); }
+            100% { opacity: 0; transform: translateY(-70px) scale(1.3); }
+        }
+
+        /* Магазин ингредиентов */
+        .shop {
+            width: 100%;
+            max-width: 400px;
+            background: rgba(255, 255, 255, 0.03);
+            border: 1px solid #ff007f;
+            box-shadow: 0 0 15px rgba(255, 0, 127, 0.2);
+            border-radius: 15px;
+            padding: 12px;
+        }
+
+        .shop-title {
+            text-align: center;
+            font-size: 14px;
+            color: #ff007f;
+            text-transform: uppercase;
+            margin-bottom: 8px;
+            letter-spacing: 1px;
+        }
+
+        .upgrade-btn {
+            width: 100%;
+            background: rgba(255, 255, 255, 0.08);
+            border: 1px solid #00f0ff;
+            color: #fff;
+            padding: 10px 15px;
+            border-radius: 10px;
+            margin: 4px 0;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            font-size: 14px;
+            cursor: pointer;
+        }
+
+        .upgrade-btn:disabled {
+            opacity: 0.4;
+            border-color: #555;
+        }
+
+        .upgrade-btn:active:not(:disabled) {
+            background: rgba(0, 240, 255, 0.2);
+        }
+
+        /* Экраны (Старт / Конец) */
+        .overlay {
+            position: fixed;
+            top: 0; left: 0; right: 0; bottom: 0;
+            background: rgba(13, 2, 33, 0.95);
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            z-index: 10;
+            padding: 20px;
+            text-align: center;
+        }
+
+        .overlay h1 {
+            font-size: 28px;
+            color: #ff007f;
+            text-shadow: 0 0 15px #ff007f;
+            margin-bottom: 10px;
+        }
+
+        .overlay p {
+            font-size: 16px;
+            color: #00f0ff;
+            margin-bottom: 20px;
+        }
+
+        .main-btn {
+            background: #ff007f;
+            color: #fff;
+            border: none;
+            padding: 14px 30px;
+            font-size: 18px;
+            font-weight: bold;
+            border-radius: 25px;
+            box-shadow: 0 0 15px #ff007f;
+            cursor: pointer;
+        }
+
+        .main-btn:active {
+            transform: scale(0.95);
+        }
+
+        .hidden { display: none !important; }
+    </style>
+</head>
+<body>
+
+    <!-- Шапка игры -->
+    <div class="header">
+        <div class="stat-box">
+            <div class="stat-label">Пиццы 🍕</div>
+            <div class="stat-value" id="score">0</div>
+        </div>
+        <div class="stat-box">
+            <div class="stat-label">Время ⏱️</div>
+            <div class="stat-value" id="timer">60</div>
+        </div>
+        <div class="stat-box">
+            <div class="stat-label">Рекорд 🏆</div>
+            <div class="stat-value" id="highscore">0</div>
+        </div>
+    </div>
+
+    <!-- Игровая зона -->
+    <div class="game-area">
+        <button class="pizza-btn" id="pizzaBtn">🍕</button>
+    </div>
+
+    <!-- Магазин ингредиентов -->
+    <div class="shop">
+        <div class="shop-title">Ингредиенты (Сила клика: <span id="clickPower">1</span>)</div>
+        <button class="upgrade-btn" id="upCheese">
+            <span>🧀 Сыр (+1 к клику)</span>
+            <span id="costCheese">15 🍕</span>
+        </button>
+        <button class="upgrade-btn" id="upPepperoni">
+            <span>🍕 Пепперони (+5 к клику)</span>
+            <span id="costPepperoni">50 🍕</span>
+        </button>
+        <button class="upgrade-btn" id="upMushroom">
+            <span>🍄 Грибочки (+15 к клику)</span>
+            <span id="costMushroom">150 🍕</span>
+        </button>
+    </div>
+
+    <!-- Стартовый экран -->
+    <div class="overlay" id="startScreen">
+        <h1>НЕОНОВАЯ ПИЦЦА</h1>
+        <p>Собери как можно больше космических пицц за 60 секунд!</p>
+        <button class="main-btn" id="startBtn">НАЧАТЬ ИГРУ</button>
+    </div>
+
+    <!-- Экран окончания игры -->
+    <div class="overlay hidden" id="endScreen">
+        <h1>ВРЕМЯ ВЫШЛО! ⌛</h1>
+        <p>Твой результат: <span id="finalScore" style="color:#00f0ff; font-weight:bold;">0</span> пицц!</p>
+        <button class="main-btn" id="restartBtn">ИГРАТЬ СНОВА</button>
+    </div>
+
+    <script>
+        let score = 0;
+        let clickPower = 1;
+        let timeLeft = 60;
+        let timerInterval = null;
+        let highscore = localStorage.getItem('pizza_highscore') || 0;
+
+        // Элементы
+        const scoreEl = document.getElementById('score');
+        const timerEl = document.getElementById('timer');
+        const highscoreEl = document.getElementById('highscore');
+        const clickPowerEl = document.getElementById('clickPower');
+        const pizzaBtn = document.getElementById('pizzaBtn');
+        const startScreen = document.getElementById('startScreen');
+        const endScreen = document.getElementById('endScreen');
+        const finalScoreEl = document.getElementById('finalScore');
+
+        const upCheese = document.getElementById('upCheese');
+        const upPepperoni = document.getElementById('upPepperoni');
+        const upMushroom = document.getElementById('upMushroom');
+
+        let costs = { cheese: 15, pepperoni: 50, mushroom: 150 };
+
+        highscoreEl.textContent = highscore;
+
+        // Звуковой эффект клика через Web Audio API
+        function playClickSound() {
+            try {
+                const ctx = new (window.AudioContext || window.webkitAudioContext)();
+                const osc = ctx.createOscillator();
+                const gain = ctx.createGain();
+                osc.type = 'sine';
+                osc.frequency.setValueAtTime(400, ctx.currentTime);
+                osc.frequency.exponentialRampToValueAtTime(800, ctx.currentTime + 0.08);
+                gain.gain.setValueAtTime(0.1, ctx.currentTime);
+                gain.gain.exponentialRampToValueAtTime(0.01, ctx.currentTime + 0.08);
+                osc.connect(gain);
+                gain.connect(ctx.destination);
+                osc.start();
+                osc.stop(ctx.currentTime + 0.08);
+            } catch(e) {}
+        }
+
+        // Старт игры
+        document.getElementById('startBtn').addEventListener('click', startGame);
+        document.getElementById('restartBtn').addEventListener('click', startGame);
+
+        function startGame() {
+            score = 0;
+            clickPower = 1;
+            timeLeft = 60;
+            costs = { cheese: 15, pepperoni: 50, mushroom: 150 };
+            
+            updateUI();
+            startScreen.classList.add('hidden');
+            endScreen.classList.add('hidden');
+
+            clearInterval(timerInterval);
+            timerInterval = setInterval(() => {
+                timeLeft--;
+                timerEl.textContent = timeLeft;
+                if (timeLeft <= 0) {
+                    endGame();
+                }
+            }, 1000);
+        }
+
+        // Клик по пицце
+        pizzaBtn.addEventListener('click', (e) => {
+            score += clickPower;
+            playClickSound();
+            createFloatingText(`+${clickPower}`, e);
+            updateUI();
+        });
+
+        // Создание вылетающих цифр
+        function createFloatingText(text, e) {
+            const el = document.createElement('div');
+            el.className = 'floating-text';
+            el.textContent = text;
+            
+            const rect = pizzaBtn.getBoundingClientRect();
+            const x = (e.clientX || rect.left + rect.width / 2) - 15;
+            const y = (e.clientY || rect.top + rect.height / 2) - 20;
+
+            el.style.left = `${x}px`;
+            el.style.top = `${y}px`;
+
+            document.body.appendChild(el);
+            setTimeout(() => el.remove(), 800);
+        }
+
+        // Покупка улучшений
+        upCheese.addEventListener('click', () => buyUpgrade('cheese', 1, 'costCheese'));
+        upPepperoni.addEventListener('click', () => buyUpgrade('pepperoni', 5, 'costPepperoni'));
+        upMushroom.addEventListener('click', () => buyUpgrade('mushroom', 15, 'costMushroom'));
+
+        function buyUpgrade(type, powerAdd, costElId) {
+            if (score >= costs[type]) {
+                score -= costs[type];
+                clickPower += powerAdd;
+                costs[type] = Math.floor(costs[type] * 1.5);
+                document.getElementById(costElId).textContent = `${costs[type]} 🍕`;
+                updateUI();
+            }
+        }
+
+        // Обновление интерфейса
+        function updateUI() {
+            scoreEl.textContent = score;
+            clickPowerEl.textContent = clickPower;
+            timerEl.textContent = timeLeft;
+
+            upCheese.disabled = score < costs.cheese;
+            upPepperoni.disabled = score < costs.pepperoni;
+            upMushroom.disabled = score < costs.mushroom;
+        }
+
+        // Конец игры
+        function endGame() {
+            clearInterval(timerInterval);
+            finalScoreEl.textContent = score;
+            if (score > highscore) {
+                highscore = score;
+                localStorage.setItem('pizza_highscore', highscore);
+                highscoreEl.textContent = highscore;
+            }
+            endScreen.classList.remove('hidden');
+        }
+    </script>
+</body>
+</html>
